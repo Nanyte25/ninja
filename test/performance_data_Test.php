@@ -101,4 +101,59 @@ class performance_data_Test extends PHPUnit_Framework_TestCase {
 				)
 			), $pd);
 	}
+
+	/**
+	 * Test threshold string
+	 */
+	public function test_check_against_threshold() {
+		//Test Range definition - 10
+		$threshold_string = "10";
+		$value = 15;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertTrue($result);
+
+		$value = 5;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertFalse($result);
+
+		//Test Range definition - 10:
+		$threshold_string = "10:";
+		$value = 5;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertTrue($result);
+
+		$value = 15;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertFalse($result);
+
+		//Test Range definition - ~:10
+		$threshold_string = "~:10";
+		$value = 15;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertTrue($result);
+
+		$value = 5;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertFalse($result);
+
+		//Test Range definition - 10:20
+		$threshold_string = "10:20";
+		$value = 25;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertTrue($result);
+
+		$value = 15;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertFalse($result);
+
+		//Test Range definition - @10:20
+		$threshold_string = "@10:20";
+		$value = 15;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertTrue($result);
+
+		$value = 25;
+		$result = performance_data::check_against_threshold($threshold_string, $value);
+		$this->assertFalse($result);
+	}
 }

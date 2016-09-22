@@ -68,4 +68,33 @@ class performance_data {
 		return $perf_data;
 	}
 
+	/**
+	 * @param $threshold_string
+	 * @param $value
+	 * @return bool
+	 */
+	public function check_against_threshold($threshold_string, $value) {
+		//Range definition - ~:10
+		if(preg_match('/^~:([0-9]+)/', $threshold_string, $matches)) {
+			return ($value > $matches[1]);
+		}
+
+		//Range definition - @10:20
+		if(preg_match('/@([0-9]+):([0-9]+)/', $threshold_string, $matches)) {
+			return ($value >= $matches[1] && $value <= $matches[2]);
+		}
+
+		//Range definition - 10:20
+		if(preg_match('/([0-9]+):([0-9]+)/', $threshold_string, $matches)) {
+			return ($value < $matches[1] || $value > $matches[2]);
+		}
+
+		//Range definition - 10:
+		if (preg_match('/([0-9]+):/', $threshold_string, $matches)) {
+			return ($value < $matches[1]);
+		}
+
+		//Range definition - 10
+		return ($value < 0 || $value > $threshold_string);
+	}
 }
