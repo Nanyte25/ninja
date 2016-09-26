@@ -74,27 +74,51 @@ class performance_data {
 	 * @return bool
 	 */
 	public function check_against_threshold($threshold_string, $value) {
-		//Range definition - ~:10
-		if(preg_match('/^~:([0-9]+)/', $threshold_string, $matches)) {
-			return ($value > $matches[1]);
+		//Check threshold string empty
+		if(!empty($threshold_string)) {
+			//Range definition - 10
+			if(is_numeric($threshold_string)) {
+				return ($value < 0 || $value > $threshold_string);
+			}
+
+			if(preg_match('/^(@|~)?([0-9]+)?:?([0-9]+)?$/', $threshold_string, $matches)) {
+				$prefix = isset($matches[1])?$matches[1]:'';
+				$lowbound = isset($matches[2])?$matches[2]:'';
+				$highbound = isset($matches[3])?$matches[3]:'';
+
+				//Range definition - ~:10
+				if($prefix === '~'){
+					return $value > $highbound;
+				}
+
+				//Range definition - @10:20
+				if($prefix === '@'){
+					if(!empty($lowbound) && !empty($highbound)) {
+						return $value >= $lowbound && $value <= $highbound;
+					}
+					if(!empty($lowbound)){
+						return $value >= $lowbound;
+					}
+					if(!empty($highbound)){
+						return $value <= $highbound;
+					}
+				}
+
+				//Range definition - 10:20 and Range definition - 10:
+				if(empty($prefix)){
+					if(!empty($lowbound) && !empty($highbound)) {
+						return $value < $lowbound || $value > $highbound;
+					}
+					if(!empty($lowbound)){
+						return $value < $lowbound;
+					}
+					if(!empty($highbound)){
+						return $value > $highbound;
+					}
+				}
+			}
 		}
 
-		//Range definition - @10:20
-		if(preg_match('/@([0-9]+):([0-9]+)/', $threshold_string, $matches)) {
-			return ($value >= $matches[1] && $value <= $matches[2]);
-		}
-
-		//Range definition - 10:20
-		if(preg_match('/([0-9]+):([0-9]+)/', $threshold_string, $matches)) {
-			return ($value < $matches[1] || $value > $matches[2]);
-		}
-
-		//Range definition - 10:
-		if (preg_match('/([0-9]+):/', $threshold_string, $matches)) {
-			return ($value < $matches[1]);
-		}
-
-		//Range definition - 10
-		return ($value < 0 || $value > $threshold_string);
+		return false;
 	}
 }
