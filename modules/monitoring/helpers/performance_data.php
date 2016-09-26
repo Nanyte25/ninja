@@ -72,7 +72,7 @@ class performance_data {
 	 * @param $threshold_string
 	 * @param $value
 	 * @return bool
-	 * @link  https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT
+	 * documentation {@link https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT}
 	 */
 	public function check_against_threshold($threshold_string, $value) {
 		//Check threshold string empty
