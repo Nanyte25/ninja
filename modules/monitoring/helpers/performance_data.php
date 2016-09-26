@@ -75,46 +75,47 @@ class performance_data {
 	 */
 	public function check_against_threshold($threshold_string, $value) {
 		//Check threshold string empty
-		if(!empty($threshold_string)) {
-			//Range definition - 10
-			if(is_numeric($threshold_string)) {
-				return ($value < 0 || $value > $threshold_string);
+		if(empty($threshold_string)) {
+			return false;
+		}
+		//Range definition - 10
+		if(is_numeric($threshold_string)) {
+			return ($value < 0 || $value > $threshold_string);
+		}
+
+		if(preg_match('/^(@|~)?([0-9]+)?:?([0-9]+)?$/', $threshold_string, $matches)) {
+			$prefix = isset($matches[1])?$matches[1]:'';
+			$lowbound = isset($matches[2])?$matches[2]:'';
+			$highbound = isset($matches[3])?$matches[3]:'';
+
+			//Range definition - ~:10
+			if($prefix === '~'){
+				return $value > $highbound;
 			}
 
-			if(preg_match('/^(@|~)?([0-9]+)?:?([0-9]+)?$/', $threshold_string, $matches)) {
-				$prefix = isset($matches[1])?$matches[1]:'';
-				$lowbound = isset($matches[2])?$matches[2]:'';
-				$highbound = isset($matches[3])?$matches[3]:'';
+			//Range definition - @10:20
+			if($prefix === '@'){
+				if(!empty($lowbound) && !empty($highbound)) {
+					return $value >= $lowbound && $value <= $highbound;
+				}
+				if(!empty($lowbound)){
+					return $value >= $lowbound;
+				}
+				if(!empty($highbound)){
+					return $value <= $highbound;
+				}
+			}
 
-				//Range definition - ~:10
-				if($prefix === '~'){
+			//Range definition - 10:20 and Range definition - 10:
+			if(empty($prefix)){
+				if(!empty($lowbound) && !empty($highbound)) {
+					return $value < $lowbound || $value > $highbound;
+				}
+				if(!empty($lowbound)){
+					return $value < $lowbound;
+				}
+				if(!empty($highbound)){
 					return $value > $highbound;
-				}
-
-				//Range definition - @10:20
-				if($prefix === '@'){
-					if(!empty($lowbound) && !empty($highbound)) {
-						return $value >= $lowbound && $value <= $highbound;
-					}
-					if(!empty($lowbound)){
-						return $value >= $lowbound;
-					}
-					if(!empty($highbound)){
-						return $value <= $highbound;
-					}
-				}
-
-				//Range definition - 10:20 and Range definition - 10:
-				if(empty($prefix)){
-					if(!empty($lowbound) && !empty($highbound)) {
-						return $value < $lowbound || $value > $highbound;
-					}
-					if(!empty($lowbound)){
-						return $value < $lowbound;
-					}
-					if(!empty($highbound)){
-						return $value > $highbound;
-					}
 				}
 			}
 		}
