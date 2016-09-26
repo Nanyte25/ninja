@@ -162,7 +162,7 @@ class performance_data_Test extends PHPUnit_Framework_TestCase {
 	/**
 	 * @dataProvider thresholds_provider
 	 */
-	public function test_check_against_threshold($threshold, $value, $expected_result) {
-		$this->assertSame($expected_result, performance_data::check_against_threshold($threshold, $value));
+	public function test_match_threshold($threshold, $value, $expected_result) {
+		$this->assertSame($expected_result, performance_data::match_threshold($threshold, $value));
 	}
 }

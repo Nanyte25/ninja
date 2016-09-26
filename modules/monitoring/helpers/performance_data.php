@@ -72,9 +72,9 @@ class performance_data {
 	 * @param $threshold_string
 	 * @param $value
 	 * @return bool
-	 * documentation {@link https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT}
+	 * @link https://www.monitoring-plugins.org/doc/guidelines.html
 	 */
-	public function check_against_threshold($threshold_string, $value) {
+	public function match_threshold($threshold_string, $value) {
 		//Check threshold string empty
 		if(empty($threshold_string)) {
 			return false;
@@ -96,26 +96,26 @@ class performance_data {
 
 			//Range definition - @10:20
 			if($prefix === '@'){
-				if(!empty($lowbound) && !empty($highbound)) {
+				if($lowbound && $highbound) {
 					return $value >= $lowbound && $value <= $highbound;
 				}
-				if(!empty($lowbound)){
+				if($lowbound){
 					return $value >= $lowbound;
 				}
-				if(!empty($highbound)){
+				if($highbound){
 					return $value <= $highbound;
 				}
 			}
 
 			//Range definition - 10:20 and Range definition - 10:
 			if(empty($prefix)){
-				if(!empty($lowbound) && !empty($highbound)) {
+				if($lowbound && $highbound) {
 					return $value < $lowbound || $value > $highbound;
 				}
-				if(!empty($lowbound)){
+				if($lowbound){
 					return $value < $lowbound;
 				}
-				if(!empty($highbound)){
+				if($highbound){
 					return $value > $highbound;
 				}
 			}
