@@ -69,6 +69,7 @@ class performance_data {
 	}
 
 	/**
+	 * @link  https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT
 	 * @param $threshold_string
 	 * @param $value
 	 * @return bool
