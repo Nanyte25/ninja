@@ -225,6 +225,7 @@ var LightboxManager = (function() {
 			 */
 			box.remove = function () {
 				overlay.parentNode.removeChild(overlay);
+				window.location.hash = '';
 				return box;
 			};
 

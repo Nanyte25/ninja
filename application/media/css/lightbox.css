@@ -69,7 +69,7 @@
   flex-direction: column;
   flex-flow: column wrap;
   position: relative;
-  overflow: visible;
+  overflow: auto;
   font-size: 10pt;
   padding: 16px;
   min-height: 32px;

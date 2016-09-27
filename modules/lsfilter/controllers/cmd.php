@@ -122,7 +122,126 @@ class Cmd_Controller extends Ninja_Controller {
 			}
 		}
 
-		$this->template->content->command_info = $command_definition;
+		$this->template = $this->get_command_form(
+			$command,
+			$command_definition,
+			$set
+		)->get_view();
+
+	}
+
+	/**
+	 * Retrieves to Form_Model for a command definition
+	 *
+	 * @param $command string The command name
+	 * @param $definition array The command definition
+	 * @param $set ObjectSet_Model The set to execute the command on
+	 * @return Form_Model
+	 */
+	protected function get_command_form ($command, $definition, $set) {
+
+		$action = LinkProvider::factory()->get_url('cmd', 'obj');
+		$parameters = $definition['params'];
+		$defaults = array(
+			'command' => $command,
+			'query' => $set->get_query()
+		);
+
+		$form = new Form_Model($action, array(
+			new Form_Field_Hidden_Model('command'),
+			new Form_Field_Hidden_Model('query'),
+			new Form_Button_Confirm_Model('submit', 'Submit command'),
+			new Form_Button_Cancel_Model('close', 'Close')
+		));
+
+		if (count($set) > 1) {
+			$form->add_field(
+				new Form_Field_HTMLDecorator_Model(
+					"<div class='alert info'>This will run '$command' for " . count($set) . " " . $set->get_table() . "</div>"
+				)
+			);
+		}
+
+		if ($definition['description']) {
+			$form->add_field(
+				new Form_Field_HTMLDecorator_Model(
+					'<p>' . html::specialchars($definition['description']) . '</p>'
+				)
+			);
+		}
+
+		foreach ($parameters as $name => $parameter) {
+
+			$parameter = array_merge(array(
+				'name' => $name,
+				'description' => '',
+				'option' => array(),
+				'default' => false
+			), $parameter);
+
+			$group = new Form_Field_Group_Model('Groupname');
+			if ($parameter['description']) {
+				$group->add_field(
+					new Form_Field_HTMLDecorator_Model(
+						'<p>' . html::specialchars($parameter['description']) . '</p>'
+					)
+				);
+			}
+
+			$defaults[$name] = $parameter['default'];
+
+			switch ($parameter['type']) {
+			case 'string':
+				$group->add_field(
+					new Form_Field_Text_Model($name, $parameter['name'])
+				);
+				break;
+			case 'int':
+			case 'float':
+			case 'duration':
+				$group->add_field(
+					new Form_Field_Number_Model($name, $parameter['name'])
+				);
+				break;
+			case 'time':
+				if ($parameter['default']) {
+					$defaults[$name] = date('Y-m-d H:i:s', strtotime($parameter['default']));
+				}
+				$group->add_field(
+					new Form_Field_Datetime_Model($name, $parameter['name'])
+				);
+				break;
+			case 'bool':
+				$group->add_field(
+					new Form_Field_Boolean_Model($name, $parameter['name'])
+				);
+				break;
+			case 'select':
+				$group->add_field(
+					new Form_Field_Option_Model($name, $parameter['name'], $parameter['option'])
+				);
+				break;
+			case 'object':
+				$set = ObjectPool_Model::get_by_query($parameter['query']);
+				$group->add_field(
+					new Form_Field_ORMObject_Model($name, $parameter['name'], array($set->get_table()))
+				);
+				break;
+			}
+
+			if (isset($parameter['condition'])) {
+				list($relation, $value) = explode('=', $parameter['condition']);
+				if ($value === 'true') $value = true;
+				elseif ($value === 'false') $value = false;
+				elseif (is_numeric($value)) $value = floatval($value);
+				$group = new Form_Field_Conditional_Model($relation, $value, $group);
+			}
+
+			$form->add_field($group);
+		}
+
+		$form->set_values($defaults);
+		return $form;
 
 	}
 
@@ -197,33 +316,36 @@ class Cmd_Controller extends Ninja_Controller {
 	 * Send a command for a specific object
 	 */
 	public function obj() {
-		// TODO Don't use ORMException in this code...
 
-		$template = $this->template->content = $this->add_view('cmd/exec');
-		$this->template->disable_refresh = true;
+		$this->template = new View('cmd/exec');
 
 		$command = $this->input->post('command', false);
 		$query = $this->input->post('query', false);
 
 		try {
-			// validate input parameters presence
-			if($command == false) {
-				throw new ORMException('Missing command');
-			}
-			if($query == false) {
-				throw new ORMException('Missing query');
+
+			if ($command == false) {
+				$this->template->error = 'Missing command parameter for command execution';
+				return;
+			} elseif ($query == false) {
+				$this->template->error = 'Missing query parameter for command execution';
+				return;
 			}
 
-			// validate table name
 			$set = ObjectPool_Model::get_by_query($query);
-			/* @var $set ObjectPool_Model */
+			$this->template->count = count($set);
+			$this->template->success = 0;
+			$this->template->command = $command;
+			$this->template->table = $set->get_table();
 
 			// validate command
 			$obj_class = $set->class_obj();
 			$commands = $obj_class::list_commands_static(true);
 
-			if(!array_key_exists($command, $commands))
-				throw new ORMException("Tried to submit command '$command' but that command does not exist for '" . $set->get_table() . "'. Aborting without any commands applied");
+			if(!array_key_exists($command, $commands)) {
+				$this->template->error = "Cannot submit command '$command', '$command' does not exist for '" . $set->get_table() . "'";
+				return;
+			}
 
 			// Unpack params
 			$params = array();
@@ -237,35 +359,44 @@ class Cmd_Controller extends Ninja_Controller {
 			$results = array();
 
 			foreach($set as $object) {
+
 				// Don't set $this->template->content directly, since command might throw exceptions
 				$command_template = $this->add_view($commands[$command]['view']);
 				$result = call_user_func_array(array($object, $command), $params);
+
 				if(isset($result['status']) && !$result['status']) {
 					$output = "";
 					if(isset($result['output'])) {
 						$output = " Output: ".$result['output'];
 					}
 					op5log::instance('ninja')->log('warning', "Failed to submit command '$command' on (".$object->get_table().") object '".$object->get_key()."'".$output);
+				} else {
+					$this->template->success++;
 				}
+
 				$command_template->result = $result;
 				$command_template->object = $object;
 				$results[] = $command_template;
 			}
 
-			$template->results = $results;
+			$this->template->results = $results;
 
 		} catch(ORMException $e) {
+
 			request::send_header(400);
 			$error_message = $e->getMessage();
 			op5log::instance('ninja')->log('warning', $error_message);
+
 			if(request::is_ajax()) {
 				$this->template = new View('json');
 				$this->template->success = false;
 				$this->template->value = array('error' => $error_message);
 				return;
 			}
-			$template->result = false;
-			$template->error = $error_message;
+
+			$this->template->error = $error_message;
+			return;
+
 		}
 	}
 }
