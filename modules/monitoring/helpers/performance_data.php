@@ -69,22 +69,22 @@ class performance_data {
 	}
 
 	/**
-	 * @param $threshold_string
+	 * @param $threshold
 	 * @param $value
 	 * @return bool
 	 * documentation link <a href="https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT">Threshold and ranges</a>
 	 */
-	public function match_threshold($threshold_string, $value) {
+	public function match_threshold($threshold, $value) {
 		//Check threshold string empty
-		if(empty($threshold_string)) {
+		if(empty($threshold)) {
 			return false;
 		}
 		//Range definition - 10
-		if(is_numeric($threshold_string)) {
-			return ($value < 0 || $value > $threshold_string);
+		if(is_numeric($threshold)) {
+			return ($value < 0 || $value > $threshold);
 		}
 
-		if(preg_match('/^(@|~)?([0-9]+)?:?([0-9]+)?$/', $threshold_string, $matches)) {
+		if(preg_match('/^(@|~)?([0-9]+)?:?([0-9]+)?$/', $threshold, $matches)) {
 			$prefix = isset($matches[1])?$matches[1]:'';
 			$lowbound = isset($matches[2])?$matches[2]:'';
 			$highbound = isset($matches[3])?$matches[3]:'';
